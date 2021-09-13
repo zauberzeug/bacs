@@ -28,6 +28,7 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
          k = np.inf,
          near_ratio = 1.0,
          sigma_h = (0, 0, 0, 0, 0, 0, 100),
+         sigma_c = None,
          ):
     """
     Perform a bundle adjustment for multi-view cameras based on
@@ -62,6 +63,7 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
         k    threshold for Huber reweighting (default: Inf -> no reweighting)
         near_ratio  fraction of scene points used for datum definition (default: 1 -> all)
         sigma_h  variances of centroid constraints (3 translations, 3 rotations, 1 scale, default: (0,0,0,0,0,0,100))
+        sigma_c  variances of camera motion constraints (experimental, length 6xT, default: None)
 
     Output:
         la   estimated camera rays [3xN]
@@ -76,11 +78,13 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
 
     # preprocess input for adjustment
     Ma_inv = np.stack([np.linalg.inv(ma) for ma in Ma], axis=0)
-    Shh = np.diag(sigma_h)**2
     N = l.shape[1]
     I = Xa.shape[1]
     T = len(Ma)
-    d = len(Shh)
+    c_indices = [k for k, s in enumerate(sigma_c) if s is not None and not np.isinf(s)] if sigma_c is not None else [] 
+    sigma_c = [s for s in sigma_c if s is not None and not np.isinf(s)] if sigma_c is not None else []
+    Shh = sparse.diags(list(sigma_h) + sigma_c)**2
+    d = Shh.shape[0]
     r = 2 * N - 3 * I - 6 * T + d
     if r < 0:
         raise ValueError(f'Not enough constraints (redundancy = {r})')
@@ -139,15 +143,16 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
             np.hstack((np.eye(3), -skew(Xa_fix[:3, i, None] / Xa_fix[3, i]), Xa_fix[:3, i, None] / Xa_fix[3, i]))
             for i in range(n_fix)
         ])
-        H = np.zeros((3 * I, d))
-        H[(3 * indices + [[0], [1], [2]]).flatten('F'), :] = H_fix
-        Nside = np.vstack((H, np.zeros((6 * T, d))))
+        Nside = np.zeros((3 * I + 6 * T, d))
+        Nside[(3 * indices + [[0], [1], [2]]).flatten('F'), :7] = H_fix
+        for k, index in enumerate(c_indices):
+            Nside[3 * I + index, 7 + k] = 1
 
         # parameter and observation updates
         A = sparse.hstack((C, D))
         Nmat = sparse.vstack((
             sparse.hstack((A.T @ invQrr @ A, Nside)),
-            np.hstack((Nside.T, -Shh)),
+            sparse.hstack((Nside.T, -Shh)),
         ))
         nvec = np.vstack((
             (A.T @ invQrr @ lr.flatten('F'))[:, None],
