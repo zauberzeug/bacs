@@ -21,17 +21,62 @@ def Rdr(dr):
     """Compute 3x3 rotation matrix from a small 3d rotation vector"""
     return np.linalg.solve(np.eye(3) - skew(dr), np.eye(3) + skew(dr))
 
-def bacs(l, ijt, Sll, Xa, Ma, P, *,
-         eps = 1e-6, # convergence criterion: max(abs(dl)) / sigma_l < eps
-         max_iterations = 10, # maximum number of iterations
-         tau = 0, # scale factor for Levenberg-Marquardt initialization
-         k = np.inf, # threshold for Huber reweighting
-         near_ratio = 1.0, # fraction of points used for datum definition
-         sigma_h = (0, 0, 0, 0, 0, 0, 1e4)): # certainty of constraints
+def bacs(l, ict, Sll, Xa, Ma, P, *,
+         eps = 1e-6,
+         max_iterations = 10,
+         tau = 0,
+         k = np.inf,
+         near_ratio = 1.0,
+         sigma_h = (0, 0, 0, 0, 0, 0, 100),
+         ):
+    """
+    Perform a bundle adjustment for multi-view cameras based on
+    corresponding camera rays.
+
+    On the supposition that the deviations of the observed camera rays are
+    normally distributed and mutually independent, the estimated orientation
+    parameters and object point coordinates correspond to the maximum-
+    likelihood estimation.
+    Line preserving cameras with known inner calibration as well as their
+    orientation within the multi-camera system (MCS) are assumed to be known.
+    For initialization sufficiently accurate approximate values for scene
+    point coordinates and orientations of the MCS (translation and rotation)
+    for different instances of time are needed.
+
+    Dimensions:
+        N  number of observed camera rays
+        I  number of object points
+        C  number of cameras within the MCS
+        T  number of instances in time
+
+    Input:
+        l    camera rays [3xN]
+        ict  observation linkage [Nx3], n-th row contains [i,c,t]
+        Sll  covariance matrices [Nx3x3] of each camera ray l[:,n]
+        Xa   approximate values for homogeneous object points [4xI]
+        Ma   approximate values for MCS transformations [Tx4x4]
+        P    projection matrices of the single-view cams [Cx3x4]
+        eps  convergence criterion: max(abs(dl)) / sigma_l < eps (default: 1e-6)
+        max_iterations   maximum number of iterations (default: 10)
+        tau  scale factor for Levenberg-Marquardt initialization (default: 0 -> no Levenberg-Marquardt)
+        k    threshold for Huber reweighting (default: Inf -> no reweighting)
+        near_ratio  fraction of scene points used for datum definition (default: 1 -> all)
+        sigma_h  variances of centroid constraints (3 translations, 3 rotations, 1 scale, default: (0,0,0,0,0,0,100))
+
+    Output:
+        la   estimated camera rays [3xN]
+        Xa   estimated object point coordinates (homogeneous) [4xN]
+        Ma   estimated motion matrices [Tx4x4] (from object system to MCS)
+        Sdd  estimated covariance matrix of oriantation parameters [6Tx6T]
+        s0dsq  estimated variance factor
+        vr   estimated corrections on l in tangent space
+        w    estimated weights on diagonal elements of Sll
+        iterations  number of iterations
+    """
 
     # preprocess input for adjustment
     Ma_inv = np.stack([np.linalg.inv(ma) for ma in Ma], axis=0)
-    Shh = np.diag(sigma_h)
+    Shh = np.diag(sigma_h)**2
     N = l.shape[1]
     I = Xa.shape[1]
     T = len(Ma)
@@ -42,7 +87,7 @@ def bacs(l, ijt, Sll, Xa, Ma, P, *,
     qlsls = np.stack([normS_jacobian(l[:, n, None]) @ Sll[n] @ normS_jacobian(l[:, n, None]).T for n in range(N)], axis=2)
     l = normS(l)
     Xa = normS(Xa)
-    la = normS(np.stack([P[ijt[n, 1]] @ Ma_inv[ijt[n, 2]] @ Xa[:, ijt[n, 0]] for n in range(N)], axis=1))
+    la = normS(np.stack([P[ict[n, 1]] @ Ma_inv[ict[n, 2]] @ Xa[:, ict[n, 0]] for n in range(N)], axis=1))
     w = np.ones((N, 1))
     W = sparse.identity(2 * N)
     beta = np.nan if np.isinf(k) else -2 * k * stats.norm.pdf(k) - 1 + 2 * stats.norm.cdf(k) * (1 - k**2) + 2 * k**2
@@ -50,9 +95,9 @@ def bacs(l, ijt, Sll, Xa, Ma, P, *,
 
     # precompute indices for C, D and Q matrices
     c_rows = (2 * np.arange(N) + [[0], [1], [0], [1], [0], [1]]).flatten('F')
-    c_cols = (3 * ijt[:, 0].T + [[0], [0], [1], [1], [2], [2]]).flatten('F')
+    c_cols = (3 * ict[:, 0].T + [[0], [0], [1], [1], [2], [2]]).flatten('F')
     d_rows = (2 * np.arange(N) + [[0], [1], [0], [1], [0], [1], [0], [1], [0], [1], [0], [1]]).flatten('F')
-    d_cols = (6 * ijt[:, 2].T + [[0], [0], [1], [1], [2], [2], [3], [3], [4], [4], [5], [5]]).flatten('F')
+    d_cols = (6 * ict[:, 2].T + [[0], [0], [1], [1], [2], [2], [3], [3], [4], [4], [5], [5]]).flatten('F')
     q_rows = (2 * np.arange(N) + [[0], [1], [0], [1]]).flatten('F')
     q_cols = (2 * np.arange(N) + [[0], [0], [1], [1]]).flatten('F')
 
@@ -68,9 +113,9 @@ def bacs(l, ijt, Sll, Xa, Ma, P, *,
         Qrr = np.zeros((2, 2, N))
         lr = np.zeros((2, N))
         for n in range(N):
-            i, j, t = ijt[n, :]
+            i, c, t = ict[n, :]
             nullLa = linalg.null_space(la[:, n, None].T)
-            tmp = nullLa.T @ normS_jacobian(P[j] @ Ma_inv[t] @ Xa[:, i, None]) @ P[j]
+            tmp = nullLa.T @ normS_jacobian(P[c] @ Ma_inv[t] @ Xa[:, i, None]) @ P[c]
             C[:, :, n] = tmp @ Ma_inv[t] @ nullXa[:, :, i]
             D[:, :, n] = tmp[:, :3] @ np.hstack((-skew(Ma_inv[t, :3, :] @ Xa[:, i, None]), Xa[3, i] * np.eye(3)))
             Qrr[:, :, n] = nullLa.T @ qlsls[:, :, n] @ nullLa
@@ -134,7 +179,7 @@ def bacs(l, ijt, Sll, Xa, Ma, P, *,
 
         # approximate observations for next iteration
         la = normS(np.stack([
-            P[ijt[n, 1]] @ Ma_inv[ijt[n, 2]] @ Xa[:, ijt[n, 0]]
+            P[ict[n, 1]] @ Ma_inv[ict[n, 2]] @ Xa[:, ict[n, 0]]
             for n in range(N)
         ], axis=1))
 
