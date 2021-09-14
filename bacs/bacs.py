@@ -235,8 +235,8 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
 
     # empirical covariance matrix
     if r > 0:
-        s0dsq = vr.flatten('F')[:, None].T @ invQrr @ vr.flatten('F')[:, None] / r
-        f = 1 if r < 30 else s0dsq[0, 0]
+        s0dsq = (vr.flatten('F')[:, None].T @ invQrr @ vr.flatten('F')[:, None] / r)[0, 0]
+        f = 1 if r < 30 else s0dsq
     else:
         s0dsq = np.nan
     Ncsc = Nmat.tocsc()
