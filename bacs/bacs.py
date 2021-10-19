@@ -146,7 +146,12 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
         Nside = np.zeros((3 * I + 6 * T, d))
         Nside[(3 * indices + [[0], [1], [2]]).flatten('F'), :7] = H_fix
         for k, index in enumerate(c_indices):
-            Nside[3 * I + index, 7 + k] = 1
+            if index % 6 < 3:
+                Nside[3 * I + index, 7 + k] = 1 # restrict angles directly
+            else:
+                t = index // 6
+                R = Ma_inv[t][:3, :3].T # restrict rotated translation parameters
+                Nside[3 * I + 6 * t + 3 : 3 * I + 6 * t + 6, 7 + k] = R[index % 6 - 3]
 
         # parameter and observation updates
         A = sparse.hstack((C, D))
