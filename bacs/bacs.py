@@ -29,6 +29,7 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
          near_ratio = 1.0,
          sigma_h = (0, 0, 0, 0, 0, 0, 100),
          sigma_c = None,
+         sigma_i = None,
          ):
     """
     Perform a bundle adjustment for multi-view cameras based on
@@ -64,6 +65,7 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
         near_ratio  fraction of scene points used for datum definition (default: 1 -> all)
         sigma_h  variances of centroid constraints (3 translations, 3 rotations, 1 scale, default: (0,0,0,0,0,0,100))
         sigma_c  variances of camera motion constraints (experimental, length 6xT, default: None)
+        sigma_i  variances of object point constraints (experimental, length 3xI, default: None)
 
     Output:
         la   estimated camera rays [3xN]
@@ -83,7 +85,9 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
     T = len(Ma)
     c_indices = [k for k, s in enumerate(sigma_c) if s is not None and np.isfinite(s)] if sigma_c is not None else []
     sigma_c =   [s for    s in           sigma_c  if s is not None and np.isfinite(s)] if sigma_c is not None else []
-    Shh = sparse.diags(list(sigma_h) + sigma_c)**2
+    i_indices = [k for k, s in enumerate(sigma_i) if s is not None and np.isfinite(s)] if sigma_i is not None else []
+    sigma_i =   [s for    s in           sigma_i  if s is not None and np.isfinite(s)] if sigma_i is not None else []
+    Shh = sparse.diags(list(sigma_h) + sigma_c + sigma_i)**2
     d = Shh.shape[0]
     r = 2 * N - 3 * I - 6 * T + d
     if r < 0:
@@ -152,6 +156,10 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
                 t = index // 6
                 R = Ma_inv[t][:3, :3].T # restrict rotated translation parameters
                 Nside[3 * I + 6 * t + 3 : 3 * I + 6 * t + 6, 7 + k] = R[index % 6 - 3]
+        for k, index in enumerate(i_indices):
+            i = index // 3
+            R = nullXa[:, :, i]
+            Nside[3 * i : 3 * i + 3, 7 + len(c_indices) + k] = R[index % 3] # restrict rotated object points
 
         # parameter and observation updates
         A = sparse.hstack((C, D))
