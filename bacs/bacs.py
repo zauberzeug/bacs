@@ -69,7 +69,7 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
         la   estimated camera rays [3xN]
         Xa   estimated object point coordinates (homogeneous) [4xN]
         Ma   estimated motion matrices [Tx4x4] (from object system to MCS)
-        Sdd  estimated covariance matrix of oriantation parameters [6Tx6T]
+        Sdd  estimated covariance matrix of orientation parameters [6Tx6T]
         s0dsq  estimated variance factor
         vr   estimated corrections on l in tangent space
         w    estimated weights on diagonal elements of Sll
@@ -81,8 +81,8 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
     N = l.shape[1]
     I = Xa.shape[1]
     T = len(Ma)
-    c_indices = [k for k, s in enumerate(sigma_c) if s is not None and not np.isinf(s)] if sigma_c is not None else [] 
-    sigma_c = [s for s in sigma_c if s is not None and not np.isinf(s)] if sigma_c is not None else []
+    c_indices = [k for k, s in enumerate(sigma_c) if s is not None and np.isfinite(s)] if sigma_c is not None else []
+    sigma_c =   [s for    s in           sigma_c  if s is not None and np.isfinite(s)] if sigma_c is not None else []
     Shh = sparse.diags(list(sigma_h) + sigma_c)**2
     d = Shh.shape[0]
     r = 2 * N - 3 * I - 6 * T + d
@@ -237,7 +237,7 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
             w[btk] = s0 * k * w[btk] / res[btk, None]
             W = sparse.diags(w.repeat(2))
 
-    # correct direction of homogeneus scene points at the horizon
+    # correct direction of homogeneous scene points at the horizon
     Xa[-1, Xa[-1, :] < 0] = -Xa[-1, Xa[-1, :] < 0]
 
     # invert for motion matrix from world to mcs
