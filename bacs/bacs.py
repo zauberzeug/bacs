@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import linalg, sparse, stats
 
+
 def skew(x):
     """Create skew-symmetric 3x3 matrix of 3x1 vector x"""
     return np.array([
@@ -9,27 +10,31 @@ def skew(x):
         [-x[1, 0], x[0, 0], 0],
     ])
 
+
 def normS(x):
     """Spherically normalize n 3d vectors in form of a 3xn matrix"""
     return x / np.linalg.norm(x, axis=0)
+
 
 def normS_jacobian(x):
     """Compute 3x3 Jacobian matrix for the spherical normalization of a 3d vector"""
     return (np.eye(3) - (x @ x.T) / (x.T @ x)) / np.linalg.norm(x)
 
+
 def Rdr(dr):
     """Compute 3x3 rotation matrix from a small 3d rotation vector"""
     return np.linalg.solve(np.eye(3) - skew(dr), np.eye(3) + skew(dr))
 
+
 def bacs(l, ict, Sll, Xa, Ma, P, *,
-         eps = 1e-6,
-         max_iterations = 10,
-         tau = 0,
-         k = np.inf,
-         near_ratio = 1.0,
-         sigma_h = (0, 0, 0, 0, 0, 0, 100),
-         sigma_c = None,
-         sigma_i = None,
+         eps=1e-6,
+         max_iterations=10,
+         tau=0,
+         k=np.inf,
+         near_ratio=1.0,
+         sigma_h=(0, 0, 0, 0, 0, 0, 100),
+         sigma_c=None,
+         sigma_i=None,
          ):
     """
     Perform a bundle adjustment for multi-view cameras based on
@@ -84,15 +89,16 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
     I = Xa.shape[1]
     T = len(Ma)
     c_indices = [k for k, s in enumerate(sigma_c) if s is not None and np.isfinite(s)] if sigma_c is not None else []
-    sigma_c =   [s for    s in           sigma_c  if s is not None and np.isfinite(s)] if sigma_c is not None else []
     i_indices = [k for k, s in enumerate(sigma_i) if s is not None and np.isfinite(s)] if sigma_i is not None else []
-    sigma_i =   [s for    s in           sigma_i  if s is not None and np.isfinite(s)] if sigma_i is not None else []
+    sigma_c = [s for s in sigma_c if s is not None and np.isfinite(s)] if sigma_c is not None else []
+    sigma_i = [s for s in sigma_i if s is not None and np.isfinite(s)] if sigma_i is not None else []
     Shh = sparse.diags(list(sigma_h) + sigma_c + sigma_i)**2
     d = Shh.shape[0]
     r = 2 * N - 3 * I - 6 * T + d
     if r < 0:
         raise ValueError(f'Not enough constraints (redundancy = {r})')
-    qlsls = np.stack([normS_jacobian(l[:, n, None]) @ Sll[n] @ normS_jacobian(l[:, n, None]).T for n in range(N)], axis=2)
+    qlsls = np.stack([normS_jacobian(l[:, n, None]) @ Sll[n] @ normS_jacobian(l[:, n, None]).T for n in range(N)],
+                     axis=2)
     l = normS(l)
     Xa = normS(Xa)
     la = normS(np.stack([P[ict[n, 1]] @ Ma_inv[ict[n, 2]] @ Xa[:, ict[n, 0]] for n in range(N)], axis=1))
@@ -143,7 +149,7 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
         Xa_fix = Xa[:, indices]
         H_fix = np.vstack([
             nullXa[:, :, indices[i]].T @
-            (1 / Xa_fix[3, i]**2 * np.hstack((Xa_fix[3, i] * np.eye(3), -Xa_fix[:3, i, None])).T) @ \
+            (1 / Xa_fix[3, i]**2 * np.hstack((Xa_fix[3, i] * np.eye(3), -Xa_fix[:3, i, None])).T) @
             np.hstack((np.eye(3), -skew(Xa_fix[:3, i, None] / Xa_fix[3, i]), Xa_fix[:3, i, None] / Xa_fix[3, i]))
             for i in range(n_fix)
         ])
@@ -151,15 +157,15 @@ def bacs(l, ict, Sll, Xa, Ma, P, *,
         Nside[(3 * indices + [[0], [1], [2]]).flatten('F'), :7] = H_fix
         for k, index in enumerate(c_indices):
             if index % 6 < 3:
-                Nside[3 * I + index, 7 + k] = 1 # restrict angles directly
+                Nside[3 * I + index, 7 + k] = 1  # restrict angles directly
             else:
                 t = index // 6
-                R = Ma_inv[t][:3, :3].T # restrict rotated translation parameters
-                Nside[3 * I + 6 * t + 3 : 3 * I + 6 * t + 6, 7 + k] = R[index % 6 - 3]
+                R = Ma_inv[t][:3, :3].T  # restrict rotated translation parameters
+                Nside[3 * I + 6 * t + 3: 3 * I + 6 * t + 6, 7 + k] = R[index % 6 - 3]
         for k, index in enumerate(i_indices):
             i = index // 3
             R = nullXa[:, :, i]
-            Nside[3 * i : 3 * i + 3, 7 + len(c_indices) + k] = R[index % 3] # restrict rotated object points
+            Nside[3 * i: 3 * i + 3, 7 + len(c_indices) + k] = R[index % 3]  # restrict rotated object points
 
         # parameter and observation updates
         A = sparse.hstack((C, D))

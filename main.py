@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from input_output import read_input, write_output
 from bacs import bacs
+from input_output import read_input, write_output
 
 # %% usage example
 dataset = 'parkinglot_near'

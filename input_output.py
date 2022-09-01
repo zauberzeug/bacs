@@ -1,5 +1,7 @@
-import numpy as np
 import os
+
+import numpy as np
+
 
 def read_input(dataset: str):
 
@@ -12,12 +14,13 @@ def read_input(dataset: str):
         [line[3], line[1], line[4]],
         [line[5], line[4], line[2]],
     ] for line in load('covariances.dat')])
-    ijt = load('linkage.dat').astype(int) - 1 # NOTE: from base-1 to base-0
+    ijt = load('linkage.dat').astype(int) - 1  # NOTE: from base-1 to base-0
     Xa = load('points.dat').T
     Ma = load('motions.dat').reshape(-1, 4, 4)
     P = load('projections.dat').reshape(-1, 3, 4)
 
     return l, Sll, ijt, Xa, Ma, P
+
 
 def write_output(dataset: str, ld, Xd, Md, Sdd, vr, w):
 
