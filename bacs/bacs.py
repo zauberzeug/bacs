@@ -1,8 +1,10 @@
+from typing import Optional, Tuple
+
 import numpy as np
 from scipy import linalg, sparse, stats
 
 
-def skew(x):
+def skew(x: np.ndarray) -> np.ndarray:
     """Create skew-symmetric 3x3 matrix of 3x1 vector x"""
     return np.array([
         [0, -x[2, 0], x[1, 0]],
@@ -11,31 +13,37 @@ def skew(x):
     ])
 
 
-def normS(x):
+def normS(x: np.ndarray) -> np.ndarray:
     """Spherically normalize n 3d vectors in form of a 3xn matrix"""
     return x / np.linalg.norm(x, axis=0)
 
 
-def normS_jacobian(x):
+def normS_jacobian(x: np.ndarray) -> np.ndarray:
     """Compute 3x3 Jacobian matrix for the spherical normalization of a 3d vector"""
     return (np.eye(3) - (x @ x.T) / (x.T @ x)) / np.linalg.norm(x)
 
 
-def Rdr(dr):
+def Rdr(dr: np.ndarray) -> np.ndarray:
     """Compute 3x3 rotation matrix from a small 3d rotation vector"""
     return np.linalg.solve(np.eye(3) - skew(dr), np.eye(3) + skew(dr))
 
 
-def bacs(l, ict, Sll, Xa, Ma, P, *,
-         eps=1e-6,
-         max_iterations=10,
-         tau=0,
-         k=np.inf,
-         near_ratio=1.0,
-         sigma_h=(0, 0, 0, 0, 0, 0, 100),
-         sigma_c=None,
-         sigma_i=None,
-         ):
+def bacs(l: np.ndarray,
+         ict: np.ndarray,
+         Sll: np.ndarray,
+         Xa: np.ndarray,
+         Ma: np.ndarray,
+         P: np.ndarray,
+         *,
+         eps: float = 1e-6,
+         max_iterations: int = 10,
+         tau: float = 0,
+         k: float = np.inf,
+         near_ratio: float = 1.0,
+         sigma_h: Tuple[float] = (0, 0, 0, 0, 0, 0, 100),
+         sigma_c: Optional[np.ndarray] = None,
+         sigma_i: Optional[np.ndarray] = None,
+         ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, int]:
     """
     Perform a bundle adjustment for multi-view cameras based on
     corresponding camera rays.

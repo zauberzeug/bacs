@@ -12,7 +12,7 @@ python3 -m pip install bacs
 ```
 
 to install the library.
-Have a look at the [doc string](https://github.com/zauberzeug/bacs/blob/main/bacs/bacs.py#L39-L84) for explanation of the parameters.
+Have a look at the [doc string](https://github.com/zauberzeug/bacs/blob/main/bacs/bacs.py#L47-L92) for explanation of the parameters.
 
 ## Testing and development
 
