@@ -163,17 +163,17 @@ def bacs(l: np.ndarray,
         ])
         Nside = np.zeros((3 * I + 6 * T, d))
         Nside[(3 * indices + [[0], [1], [2]]).flatten('F'), :7] = H_fix
-        for k, index in enumerate(c_indices):
+        for k_, index in enumerate(c_indices):
             if index % 6 < 3:
-                Nside[3 * I + index, 7 + k] = 1  # restrict angles directly
+                Nside[3 * I + index, 7 + k_] = 1  # restrict angles directly
             else:
                 t = index // 6
                 R = Ma_inv[t][:3, :3].T  # restrict rotated translation parameters
-                Nside[3 * I + 6 * t + 3: 3 * I + 6 * t + 6, 7 + k] = R[index % 6 - 3]
-        for k, index in enumerate(i_indices):
+                Nside[3 * I + 6 * t + 3: 3 * I + 6 * t + 6, 7 + k_] = R[index % 6 - 3]
+        for k_, index in enumerate(i_indices):
             i = index // 3
             R = nullXa[:, :, i]
-            Nside[3 * i: 3 * i + 3, 7 + len(c_indices) + k] = R[index % 3]  # restrict rotated object points
+            Nside[3 * i: 3 * i + 3, 7 + len(c_indices) + k_] = R[index % 3]  # restrict rotated object points
 
         # parameter and observation updates
         A = sparse.hstack((C, D))
