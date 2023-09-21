@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 from scipy import linalg, sparse, stats
@@ -40,10 +40,10 @@ def bacs(l: np.ndarray,
          tau: float = 0,
          k: float = np.inf,
          near_ratio: float = 1.0,
-         sigma_h: Tuple[float] = (0, 0, 0, 0, 0, 0, 100),
-         sigma_c: Optional[np.ndarray] = None,
-         sigma_i: Optional[np.ndarray] = None,
-         ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, int]:
+         sigma_h: Tuple[float, float, float, float, float, float, float] = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0),
+         sigma_c: Optional[List[float]] = None,
+         sigma_i: Optional[List[float]] = None,
+         ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, sparse.spmatrix, float, np.ndarray, np.ndarray, int]:
     """
     Perform a bundle adjustment for multi-view cameras based on
     corresponding camera rays.
@@ -98,8 +98,8 @@ def bacs(l: np.ndarray,
     T = len(Ma)
     c_indices = [k for k, s in enumerate(sigma_c) if s is not None and np.isfinite(s)] if sigma_c is not None else []
     i_indices = [k for k, s in enumerate(sigma_i) if s is not None and np.isfinite(s)] if sigma_i is not None else []
-    sigma_c = [s for s in sigma_c if s is not None and np.isfinite(s)] if sigma_c is not None else []
-    sigma_i = [s for s in sigma_i if s is not None and np.isfinite(s)] if sigma_i is not None else []
+    sigma_c = [s for s in sigma_c or [] if s is not None and np.isfinite(s)]
+    sigma_i = [s for s in sigma_i or [] if s is not None and np.isfinite(s)]
     Shh = sparse.diags(list(sigma_h) + sigma_c + sigma_i)**2
     d = Shh.shape[0]
     r = 2 * N - 3 * I - 6 * T + d

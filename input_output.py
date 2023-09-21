@@ -1,13 +1,13 @@
-import os
+from pathlib import Path
 from typing import Tuple
 
 import numpy as np
+from scipy import sparse
 
 
 def read_input(dataset: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-
     def load(filename: str) -> np.ndarray:
-        return np.loadtxt(os.path.join('input', dataset, filename), delimiter=',')
+        return np.loadtxt(Path('input') / dataset / filename, delimiter=',')
 
     l = load('rays.dat').T
     Sll = np.array([[
@@ -27,12 +27,11 @@ def write_output(dataset: str,
                  ld: np.ndarray,
                  Xd: np.ndarray,
                  Md: np.ndarray,
-                 Sdd: np.ndarray,
+                 Sdd: sparse.spmatrix,
                  vr: np.ndarray,
                  w: np.ndarray) -> None:
-
     def save(filename: str, X, fmt: str = '%.6f') -> None:
-        np.savetxt(os.path.join('results', dataset, filename), X, delimiter=',', fmt=fmt)
+        np.savetxt(Path('results') / dataset / filename, X, delimiter=',', fmt=fmt)
 
     save('rays.dat', ld.T)
     save('points.dat', Xd.T)
