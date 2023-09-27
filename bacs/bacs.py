@@ -96,8 +96,8 @@ def bacs(l: np.ndarray,
     N = l.shape[1]
     I = Xa.shape[1]
     T = len(Ma)
-    c_indices = [k for k, s in enumerate(sigma_c) if s is not None and np.isfinite(s)] if sigma_c is not None else []
-    i_indices = [k for k, s in enumerate(sigma_i) if s is not None and np.isfinite(s)] if sigma_i is not None else []
+    c_indices = [k_ for k_, s in enumerate(sigma_c) if s is not None and np.isfinite(s)] if sigma_c is not None else []
+    i_indices = [k_ for k_, s in enumerate(sigma_i) if s is not None and np.isfinite(s)] if sigma_i is not None else []
     sigma_c = [s for s in sigma_c or [] if s is not None and np.isfinite(s)]
     sigma_i = [s for s in sigma_i or [] if s is not None and np.isfinite(s)]
     Shh = sparse.diags(list(sigma_h) + sigma_c + sigma_i)**2
