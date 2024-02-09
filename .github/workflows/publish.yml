@@ -10,6 +10,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Update version.py
+        run: |
+          echo "__version__ = '${GITHUB_REF#refs/tags/v}'" > bacs/version.py
       - name: set up Python
         uses: actions/setup-python@v2
         with:
