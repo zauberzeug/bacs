@@ -30,6 +30,8 @@ python3 main.py
 
 you can verify that BACS is working correctly (eg. there is no `git diff` in the results folder after execution).
 
+By pushing a new tag "vX.Y.Z" to the repository, the package will be automatically built and uploaded to PyPI.
+
 ## Resources
 
 Further explanation and visualization can be found on the [BACS project page](https://www.ipb.uni-bonn.de/data-software/bacs/), the corresponding [Matlab demo](https://www.ipb.uni-bonn.de/html/software/bacs/v0.1/demo-v0.1.html) as well as the original [publication](https://www.isprs-ann-photogramm-remote-sens-spatial-inf-sci.net/I-3/75/2012/isprsannals-I-3-75-2012.pdf).

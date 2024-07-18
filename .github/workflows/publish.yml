@@ -1,11 +1,13 @@
 name: Upload Python Package
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
-  pypi:
+  release:
     runs-on: ubuntu-latest
 
     steps:
@@ -40,7 +42,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         id: create_release
         with:
-          draft: true
+          draft: false
           prerelease: false
           name: ${{ env.VERSION }}
           tag_name: ${{ env.VERSION }}
