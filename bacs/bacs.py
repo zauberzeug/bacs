@@ -41,8 +41,8 @@ def bacs(l: np.ndarray,
          k: float = np.inf,
          near_ratio: float = 1.0,
          sigma_h: Tuple[float, float, float, float, float, float, float] = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0),
-         sigma_c: Optional[List[float]] = None,
-         sigma_i: Optional[List[float]] = None,
+         sigma_c: Optional[List[Optional[float]]] = None,
+         sigma_i: Optional[List[Optional[float]]] = None,
          ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, sparse.spmatrix, float, np.ndarray, np.ndarray, int]:
     """
     Perform a bundle adjustment for multi-view cameras based on
