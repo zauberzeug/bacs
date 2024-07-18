@@ -14,10 +14,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Update version.py
-        run: |
-          echo "__version__ = '${GITHUB_REF#refs/tags/v}'" > bacs/version.py
-
       - name: set up Python
         uses: actions/setup-python@v5
         with:
@@ -26,12 +22,14 @@ jobs:
       - name: set up Poetry
         uses: abatilo/actions-poetry@v2
 
-      - name: get version
+      - name: Get version
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo "VERSION=$(echo ${GITHUB_REF/refs\/tags\//})" >> $GITHUB_ENV
 
-      - name: set version
-        run: poetry version ${{ steps.get_version.outputs.VERSION }}
+      - name: Set version
+        run: |
+          VERSION=${{ env.VERSION }}
+          poetry version ${VERSION#v}
 
       - name: publish
         env:
@@ -48,9 +46,6 @@ jobs:
           tag_name: ${{ env.VERSION }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Update version in pyproject.toml
-        run: python .github/workflows/update_pyproject.py $(echo ${GITHUB_REF/refs\/tags\//})
 
       - name: Commit and push changes
         run: |
