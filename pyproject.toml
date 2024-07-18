@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bacs"
-version = "v0.1.10"
+version = "0.1.11"
 description = "Bundle Adjustment For Camera Systems"
 authors = ["Zauberzeug GmbH <info@zauberzeug.com>"]
 license = "MIT"
