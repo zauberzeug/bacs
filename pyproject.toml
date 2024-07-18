@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bacs"
-version = "0.1.0"
+version = "0.1.8-dev"
 description = "Bundle Adjustment For Camera Systems"
 authors = ["Zauberzeug GmbH <info@zauberzeug.com>"]
 license = "MIT"
@@ -23,4 +23,49 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
+python_version = "3.11"
+install_types = true
+
+[[tool.mypy.overrides]]
+module = [
+    "scipy.*",
+]
 ignore_missing_imports = true
+
+[tool.pylint]
+disable = [
+    "C0103", # invalid variable name
+    "C0301", # line too long
+    "C0114", # missing module docstring
+    "R0912", # too many branches
+    "R0913", # too many arguments
+    "R0914", # too many local variables
+    "R0915", # too many statements
+]
+
+[tool.ruff]
+indent-width = 4
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "I",  # isort
+    "E",  # pycodestyle
+    "W",  # pycodestyle
+    "B",  # bugbear
+    "F",  # pyflakes
+    "UP", # pyupgrade
+    "RUF", # ruff
+    "PL", # pylint
+]
+fixable = [
+    "I",  # isort
+]
+ignore = [
+    "E741", # ambiguous variable name
+    "E501", # line too long
+    "PLR0912", # too many branches
+    "PLR0913", # too many arguments
+    "PLR0915", # too many statements
+    "PLR2004", # magic value comparison
+]

@@ -2,23 +2,11 @@
   "autopep8.args": ["--max-line-length=120"],
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
-  "isort.args": ["--line-length", "120"],
   "prettier.printWidth": 120,
-  "pylint.args": [
-    "--disable=C0103", // Invalid name (e.g., variable/function/class naming conventions)
-    "--disable=C0111", // Missing docstring (in function/class/method)
-    "--disable=C0301", // Line too long (exceeds character limit)
-    "--disable=R0912", // Too many branches
-    "--disable=R0913", // Too many arguments
-    "--disable=R0914", // Too many local variables
-    "--disable=R0915" // Too many statements
-  ],
-  "python.testing.pytestEnabled": false,
-  "python.testing.unittestEnabled": false,
   "[python]": {
     "editor.defaultFormatter": "ms-python.autopep8",
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
+      "source.fixAll.ruff": "always"
     }
   }
 }

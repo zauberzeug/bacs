@@ -9,24 +9,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Update version.py
         run: |
           echo "__version__ = '${GITHUB_REF#refs/tags/v}'" > bacs/version.py
+
       - name: set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+
       - name: set up Poetry
-        uses: abatilo/actions-poetry@v2.0.0
-        with:
-          poetry-version: "1.3.1"
+        uses: abatilo/actions-poetry@v2
+
       - name: get version
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
       - name: set version
         run: poetry version ${{ steps.get_version.outputs.VERSION }}
+
       - name: publish
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
         run: poetry publish --build
+
+      - name: Create GitHub release entry
+        uses: softprops/action-gh-release@v1
+        id: create_release
+        with:
+          draft: true
+          prerelease: false
+          name: ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Update version in pyproject.toml
+        run: python .github/workflows/update_pyproject.py $(echo ${GITHUB_REF/refs\/tags\//})
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "Update pyproject.toml"
+          git push origin HEAD:main
